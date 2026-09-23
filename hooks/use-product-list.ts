@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { getProducts, getProductsByCategory, searchProducts } from "@/lib/api/products";
 import { normalizeApiError, type ApiError } from "@/lib/api/errors";
+import { getProductStoreServerSnapshot, getProductStoreSnapshot, subscribeToProductStore, mergeProductList } from "@/lib/product-store";
 import type { ProductListResponse } from "@/types/product";
 
 interface UseProductListOptions {
@@ -24,6 +25,7 @@ interface ProductListState {
 }
 
 export function useProductList({ page, pageSize, search, category, sortBy, sortOrder, retryKey }: UseProductListOptions) {
+  useSyncExternalStore(subscribeToProductStore, getProductStoreSnapshot, getProductStoreServerSnapshot);
   const [state, setState] = useState<ProductListState>({
     requestKey: "",
     status: "success",
@@ -53,7 +55,7 @@ export function useProductList({ page, pageSize, search, category, sortBy, sortO
       request
         .then((data) => {
           if (sequence !== requestSequence.current || controller?.signal.aborted) return;
-          setState({ requestKey, status: "success", data, error: null });
+          setState({ requestKey, status: "success", data: mergeProductList(data), error: null });
         })
         .catch((error: unknown) => {
           if (sequence !== requestSequence.current || controller?.signal.aborted) return;

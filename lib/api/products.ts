@@ -28,8 +28,8 @@ export async function getProductsByCategory(category: string, params: { limit: n
   return response.data;
 }
 
-export async function getProductById(id: number) {
-  const response = await apiClient.get<Product>(`/products/${id}`);
+export async function getProductById(id: number, options?: ProductRequestOptions) {
+  const response = await apiClient.get<Product>(`/products/${id}`, { signal: options?.signal });
   return response.data;
 }
 
@@ -38,17 +38,17 @@ export async function getCategories(options?: ProductRequestOptions) {
   return response.data.map((category) => (typeof category === "string" ? category : category.slug));
 }
 
-export async function createProduct(product: ProductMutationInput) {
-  const response = await apiClient.post<Product>("/products/add", product);
+export async function createProduct(product: ProductMutationInput, options?: ProductRequestOptions) {
+  const response = await apiClient.post<Product>("/products/add", product, { signal: options?.signal });
   return response.data;
 }
 
-export async function updateProduct(id: number, product: Partial<ProductMutationInput>) {
-  const response = await apiClient.put<Product>(`/products/${id}`, product);
+export async function updateProduct(id: number, product: Partial<ProductMutationInput>, options?: ProductRequestOptions) {
+  const response = await apiClient.put<Product>(`/products/${id}`, product, { signal: options?.signal });
   return response.data;
 }
 
-export async function deleteProduct(id: number) {
-  const response = await apiClient.delete<Product>(`/products/${id}`);
+export async function deleteProduct(id: number, options?: ProductRequestOptions) {
+  const response = await apiClient.delete<Product>(`/products/${id}`, { signal: options?.signal });
   return response.data;
 }

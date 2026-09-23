@@ -36,7 +36,7 @@ DummyJSON mutations are simulated and are not persisted by the API. The complete
 - `product-admin.product-overrides` for edits keyed by product id.
 - `product-admin.deleted-product-ids` for ids hidden from the catalog.
 
-Remote data remains the source of truth for reads; these local records are merged at the product repository boundary so refreshes preserve the current browser session without pretending that the API persisted the mutation.
+Remote data remains the source of truth for reads; these local records are merged at the product repository boundary so refreshes preserve the current browser session without pretending that the API persisted the mutation. Product mutation state is intentionally independent from login state and survives logout/login.
 
 ## Product query behavior
 
@@ -44,7 +44,55 @@ Product list state is represented in the URL with `page`, `pageSize`, `search`, 
 
 Search input changes update the URL immediately, but product requests wait 400ms after the last keystroke. Debouncing reduces unnecessary requests; it is not sufficient for correctness because an older request can still finish after a newer one. Each list request also gets an `AbortController` and a request sequence identity, so canceled or stale responses cannot replace the latest query result.
 
-## Next implementation slice
+## Authentication
+
+The DummyJSON demo credentials are `emilys` / `emilyspass`. Authentication uses `POST /auth/login`; the access token and user session are stored in browser `localStorage` for this frontend-only assignment. There are no environment variables required.
+
+## CRUD behavior
+
+Create, update, and delete calls are sent to DummyJSON through the shared Axios service. Because DummyJSON simulates mutations, successful responses are written to the local product store: created products, per-ID edit overrides, and deleted IDs. Details and list views merge that state with API responses, including locally created products and deleted-product not-found states.
+
+## Engineering notes
+
+One important issue was authentication hydration during a full page refresh. The protected layout initially rendered before the browser session had been read, which could redirect a valid user to login. The auth store now exposes a hydration snapshot and the guard waits for it before redirecting.
+
+AI tools helped scaffold repetitive TypeScript, component, and API wiring during development. The implementation was reviewed with lint, TypeScript, production builds, browser interaction checks, delayed search requests, responsive viewports, and forced API failures. No claim is made that every line was manually typed.
+
+## Compliance checklist
+
+- [x] Login with correct credentials and useful wrong-credential errors
+- [x] Axios login request and one shared Axios instance
+- [x] Bearer token interceptor and centralized normalized errors
+- [x] Logout and protected product routes
+- [x] Product image, title, category, price, rating, and stock
+- [x] Desktop semantic table and mobile cards
+- [x] `limit`, `skip`, numbered pagination, Previous, Next, page sizes 10/20/50
+- [x] `Showing X-Y of Z` range text
+- [x] Debounced server-side search with page reset
+- [x] AbortController and request identity stale-response protection
+- [x] Delayed search verification with `delay=2000` behavior simulated in browser routing
+- [x] Categories API and category endpoint filtering
+- [x] Price, rating, and title sorting with ascending/descending order
+- [x] Product details, gallery, description, reviews, and invalid ID state
+- [x] Add and edit forms with validation and duplicate-submit protection
+- [x] Delete confirmation dialog with duplicate-delete protection
+- [x] Local persistence for created, edited, and deleted products
+- [x] Loading, empty, error, and retry states for async product flows
+- [x] URL state for page, page size, search, category, sort, and order
+- [x] Invalid URL normalization and oversized-page correction
+- [x] API separation, small components, and no duplicated request logic
+- [x] No React Query, SWR, table library, pagination library, or new dependency
+- [x] README documentation
+- [ ] Regular Git commits: commits are intentionally left for the project owner per instructions
+- [x] Production build readiness verified
+
+## Verification commands
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
 1. Build the product detail view.
 2. Add create/edit/delete workflows and focused loading, error, empty, and retry states.

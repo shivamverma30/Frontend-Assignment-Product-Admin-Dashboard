@@ -5,6 +5,7 @@ export const STORAGE_KEYS = {
   createdProducts: "product-admin.created-products",
   productOverrides: "product-admin.product-overrides",
   deletedProductIds: "product-admin.deleted-product-ids",
+  productStoreEvent: "product-admin:product-store-change",
 } as const;
 
 export const PRODUCT_PAGE_SIZES = [10, 20, 50] as const;

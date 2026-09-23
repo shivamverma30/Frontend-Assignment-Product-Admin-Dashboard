@@ -4,7 +4,7 @@ import { ProductRow } from "@/components/products/product-row";
 
 export function ProductTable({ products }: Readonly<{ products: Product[] }>) {
   return (
-    <div className="hidden overflow-hidden border border-border bg-surface lg:block">
+    <div className="hidden overflow-hidden border border-border bg-surface xl:block">
       <table className="w-full border-collapse text-left">
         <caption className="sr-only">Product catalog</caption>
         <thead className="bg-slate-50">

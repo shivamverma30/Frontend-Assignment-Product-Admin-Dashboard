@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { DeleteProductButton } from "@/components/products/delete-product-button";
 import type { Product } from "@/types/product";
 
 export function ProductRow({ product }: Readonly<{ product: Product }>) {
@@ -22,9 +23,11 @@ export function ProductRow({ product }: Readonly<{ product: Product }>) {
       <td className="px-5 py-4 text-sm text-slate-600">{product.rating.toFixed(1)}</td>
       <td className="px-5 py-4 text-sm text-slate-600">{product.stock}</td>
       <td className="px-5 py-4 text-right">
-        <Link className="text-sm font-semibold text-brand-strong hover:text-slate-950" href={`/products/${product.id}`}>
-          View
-        </Link>
+        <div className="flex items-center justify-end gap-3">
+          <Link className="text-sm font-semibold text-brand-strong hover:text-slate-950" href={`/products/${product.id}`}>View</Link>
+          <Link className="text-sm font-semibold text-slate-600 hover:text-slate-950" href={`/products/${product.id}/edit`}>Edit</Link>
+          <DeleteProductButton productId={product.id} productTitle={product.title} />
+        </div>
       </td>
     </tr>
   );
@@ -33,7 +36,7 @@ export function ProductRow({ product }: Readonly<{ product: Product }>) {
 export function ProductImage({ product }: Readonly<{ product: Product }>) {
   return (
     <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden border border-border bg-slate-50">
-      <Image src={product.thumbnail} alt="" width={44} height={44} className="h-full w-full object-cover" />
+      {product.thumbnail ? <Image src={product.thumbnail} alt="" width={44} height={44} className="h-full w-full object-cover" /> : <span className="text-xs font-semibold text-slate-400" aria-hidden="true">N/A</span>}
     </div>
   );
 }

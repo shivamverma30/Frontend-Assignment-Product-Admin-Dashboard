@@ -18,6 +18,7 @@ export function ProductCatalog() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const query = parseProductListUrl(searchParams);
+  const success = searchParams.get("success");
   const [retryKey, setRetryKey] = useState(0);
   const [categoryRetryKey, setCategoryRetryKey] = useState(0);
   const { status: categoryStatus, categories, error: categoryError } = useProductCategories(categoryRetryKey);
@@ -82,6 +83,7 @@ export function ProductCatalog() {
 
   return (
     <div className="mt-8 space-y-5">
+      {success === "created" ? <p className="border border-green-200 bg-green-50 px-3 py-2.5 text-sm text-green-800" role="status">Product created successfully.</p> : null}
       <div className="flex flex-col gap-4 border-y border-border py-4 xl:flex-row xl:items-center xl:justify-between">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:flex-wrap">
           <label className="sr-only" htmlFor="product-search">Search products</label>
@@ -118,7 +120,7 @@ export function ProductCatalog() {
       {isLoading && catalogData ? <p className="text-xs text-muted" aria-live="polite">Updating products...</p> : null}
       {status === "error" ? <ErrorState message={error?.message ?? "We could not load products."} onRetry={() => setRetryKey((value) => value + 1)} /> : null}
       {status === "success" && catalogData?.products.length === 0 ? <EmptyState title="No products found" description="Try a different search, category, or sorting option." /> : null}
-      {catalogData && catalogData.products.length > 0 ? <><ProductTable products={catalogData.products} /><div className="space-y-3 lg:hidden">{catalogData.products.map((product) => <ProductCard key={product.id} product={product} />)}</div><Pagination page={Math.min(page, totalPages)} pageSize={pageSize} total={catalogData.total} totalPages={totalPages} isLoading={isLoading} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} /></> : null}
+      {catalogData && catalogData.products.length > 0 ? <><ProductTable products={catalogData.products} /><div className="space-y-3 xl:hidden">{catalogData.products.map((product) => <ProductCard key={product.id} product={product} />)}</div><Pagination page={Math.min(page, totalPages)} pageSize={pageSize} total={catalogData.total} totalPages={totalPages} isLoading={isLoading} onPageChange={handlePageChange} onPageSizeChange={handlePageSizeChange} /></> : null}
       {catalogData ? <p className="text-xs text-muted">{getPageRange(Math.min(page, totalPages), pageSize, catalogData.total).start === 0 ? "Catalog is empty" : `${catalogData.total} products in the catalog`}</p> : null}
     </div>
   );

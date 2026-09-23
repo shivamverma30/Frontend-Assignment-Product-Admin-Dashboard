@@ -61,4 +61,5 @@ export interface ProductMutationInput {
   price: number;
   category: string;
   stock: number;
+  thumbnail?: string;
 }

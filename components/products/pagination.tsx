@@ -23,9 +23,9 @@ export function Pagination({ page, pageSize, total, totalPages, isLoading, onPag
             {PRODUCT_PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}
           </select>
         </label>
-        <nav className="flex items-center gap-1" aria-label="Product pagination">
+        <nav className="flex max-w-full flex-wrap items-center gap-1" aria-label="Product pagination">
           <PaginationButton disabled={isLoading || page === 1} onClick={() => onPageChange(page - 1)}>Previous</PaginationButton>
-          {[...Array(totalPages).keys()].map((index) => index + 1).map((pageNumber) => <PaginationButton key={pageNumber} active={pageNumber === page} disabled={isLoading} onClick={() => onPageChange(pageNumber)}>{pageNumber}</PaginationButton>)}
+          {getPageNumbers(page, totalPages).map((pageNumber, index) => pageNumber === null ? <span className="px-1 text-sm text-muted" key={`ellipsis-${index}`} aria-hidden="true">...</span> : <PaginationButton key={pageNumber} active={pageNumber === page} disabled={isLoading} onClick={() => onPageChange(pageNumber)}>{pageNumber}</PaginationButton>)}
           <PaginationButton disabled={isLoading || page === totalPages} onClick={() => onPageChange(page + 1)}>Next</PaginationButton>
         </nav>
       </div>
@@ -40,4 +40,11 @@ function PaginationButton({ children, active = false, disabled, onClick }: Reado
 function getRange(page: number, pageSize: number, total: number) {
   if (total === 0) return { start: 0, end: 0 };
   return { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, total) };
+}
+
+function getPageNumbers(page: number, totalPages: number): Array<number | null> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  if (page <= 4) return [1, 2, 3, 4, 5, null, totalPages];
+  if (page >= totalPages - 3) return [1, null, totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  return [1, null, page - 1, page, page + 1, null, totalPages];
 }
