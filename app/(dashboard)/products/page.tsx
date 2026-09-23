@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
+import { ProductCatalog } from "@/components/products/product-catalog";
+import { ProductListSkeleton } from "@/components/products/product-list-skeleton";
 import { PageHeader } from "@/components/ui/page-header";
-import { EmptyState } from "@/components/ui/empty-state";
 
 export const metadata: Metadata = {
   title: "Products",
@@ -15,10 +17,9 @@ export default function ProductsPage() {
         title="Products"
         description="Review inventory, pricing, and product performance in one place."
       />
-      <EmptyState
-        title="Product workspace is ready"
-        description="The catalog table, filters, and pagination will be added in the next implementation step."
-      />
+      <Suspense fallback={<div className="mt-8"><ProductListSkeleton /></div>}>
+        <ProductCatalog />
+      </Suspense>
     </section>
   );
 }

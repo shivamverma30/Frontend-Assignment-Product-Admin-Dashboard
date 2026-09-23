@@ -37,6 +37,15 @@ export function getAuthSessionForServer() {
   return null;
 }
 
+export function getAuthHydration() {
+  hydrateSession();
+  return hasHydrated;
+}
+
+export function getAuthHydrationForServer() {
+  return false;
+}
+
 export function getAuthToken() {
   return getAuthSession()?.accessToken ?? null;
 }

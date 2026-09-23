@@ -38,6 +38,12 @@ export interface ProductListResponse {
   limit: number;
 }
 
+export interface ProductCategory {
+  slug: string;
+  name: string;
+  url: string;
+}
+
 export interface ProductQuery {
   page: number;
   pageSize: number;

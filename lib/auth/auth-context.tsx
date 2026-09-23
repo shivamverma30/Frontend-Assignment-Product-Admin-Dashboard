@@ -5,6 +5,8 @@ import { createContext, useContext, useSyncExternalStore } from "react";
 import { login as loginRequest } from "@/lib/api/auth";
 import {
   clearAuthSession,
+  getAuthHydration,
+  getAuthHydrationForServer,
   getAuthSession,
   getAuthSessionForServer,
   persistAuthSession,
@@ -13,6 +15,7 @@ import {
 import type { AuthSession, LoginCredentials } from "@/types/auth";
 
 interface AuthContextValue {
+  isHydrated: boolean;
   session: AuthSession | null;
   signIn: (credentials: LoginCredentials) => Promise<AuthSession>;
   signOut: () => void;
@@ -26,6 +29,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     getAuthSession,
     getAuthSessionForServer,
   );
+  const isHydrated = useSyncExternalStore(
+    subscribeToAuth,
+    getAuthHydration,
+    getAuthHydrationForServer,
+  );
 
   async function signIn(credentials: LoginCredentials) {
     const nextSession = await loginRequest(credentials);
@@ -38,7 +46,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   }
 
   return (
-    <AuthContext.Provider value={{ session, signIn, signOut }}>
+    <AuthContext.Provider value={{ isHydrated, session, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

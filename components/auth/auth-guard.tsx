@@ -8,15 +8,15 @@ import { useAuth } from "@/lib/auth/auth-context";
 export function AuthGuard({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
-  const { session } = useAuth();
+  const { isHydrated, session } = useAuth();
 
   useEffect(() => {
-    if (!session) {
+    if (isHydrated && !session) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
     }
-  }, [pathname, router, session]);
+  }, [isHydrated, pathname, router, session]);
 
-  if (!session) {
+  if (!isHydrated || !session) {
     return <div className="min-h-screen bg-background" aria-busy="true" aria-label="Checking authentication" />;
   }
 

@@ -1,36 +1,41 @@
 import { apiClient } from "@/lib/api/client";
-import type { Product, ProductListResponse, ProductMutationInput, ProductSortField } from "@/types/product";
+import type { Product, ProductCategory, ProductListResponse, ProductMutationInput, ProductSortField } from "@/types/product";
+
+interface ProductRequestOptions {
+  signal?: AbortSignal;
+}
 
 export async function getProducts(params: {
   limit: number;
   skip: number;
   sortBy?: ProductSortField;
   order?: "asc" | "desc";
-}) {
-  const response = await apiClient.get<ProductListResponse>("/products", { params });
+}, options?: ProductRequestOptions) {
+  const response = await apiClient.get<ProductListResponse>("/products", { params, signal: options?.signal });
   return response.data;
 }
 
-export async function searchProducts(query: string, params: { limit: number; skip: number }) {
+export async function searchProducts(query: string, params: { limit: number; skip: number }, options?: ProductRequestOptions) {
   const response = await apiClient.get<ProductListResponse>("/products/search", {
     params: { q: query, ...params },
+    signal: options?.signal,
   });
   return response.data;
 }
 
-export async function getProductsByCategory(category: string, params: { limit: number; skip: number }) {
-  const response = await apiClient.get<ProductListResponse>(`/products/category/${encodeURIComponent(category)}`, { params });
+export async function getProductsByCategory(category: string, params: { limit: number; skip: number }, options?: ProductRequestOptions) {
+  const response = await apiClient.get<ProductListResponse>(`/products/category/${encodeURIComponent(category)}`, { params, signal: options?.signal });
   return response.data;
 }
 
-export async function getProduct(id: number) {
+export async function getProductById(id: number) {
   const response = await apiClient.get<Product>(`/products/${id}`);
   return response.data;
 }
 
 export async function getCategories() {
-  const response = await apiClient.get<string[]>("/products/categories");
-  return response.data;
+  const response = await apiClient.get<ProductCategory[] | string[]>("/products/categories");
+  return response.data.map((category) => (typeof category === "string" ? category : category.slug));
 }
 
 export async function createProduct(product: ProductMutationInput) {
