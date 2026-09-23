@@ -1,36 +1,46 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Product Admin Dashboard
 
-## Getting Started
+A restrained product operations workspace built with Next.js App Router, React, TypeScript, Tailwind CSS, Axios, and DummyJSON.
 
-First, run the development server:
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000. The current foundation exposes `/login`, `/products`, and `/products/[id]`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Validation commands:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
 
-## Learn More
+## Architecture
 
-To learn more about Next.js, take a look at the following resources:
+- `app/` contains route composition and the protected dashboard layout.
+- `components/` contains reusable layout, auth, and UI primitives.
+- `lib/api/client.ts` is the only Axios instance. It applies the DummyJSON base URL, attaches the stored access token, and publishes unauthorized responses consistently.
+- `lib/api/auth.ts` and `lib/api/products.ts` contain typed request functions. UI components do not call Axios directly.
+- `types/` contains the shared auth and product contracts.
+- `lib/constants.ts` contains storage keys, safe page-size options, and API defaults.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Client-side mutation persistence
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+DummyJSON mutations are simulated and are not persisted by the API. The completed dashboard will retain the user-visible result in `localStorage` using three separate records:
 
-## Deploy on Vercel
+- `product-admin.created-products` for products created in this browser.
+- `product-admin.product-overrides` for edits keyed by product id.
+- `product-admin.deleted-product-ids` for ids hidden from the catalog.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Remote data remains the source of truth for reads; these local records are merged at the product repository boundary so refreshes preserve the current browser session without pretending that the API persisted the mutation.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Next implementation slice
+
+1. Add the login request, validation, session storage, logout, and API feedback states.
+2. Add the product repository hook with URL query normalization, pagination, category filtering, sorting, debounced search, and stale-request protection.
+3. Build the responsive table/card catalog and product detail view.
+4. Add create/edit/delete workflows and focused loading, error, empty, and retry states.
