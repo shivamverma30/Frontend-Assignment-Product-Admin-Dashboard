@@ -14,6 +14,6 @@ export const DEFAULT_PRODUCT_QUERY = {
   pageSize: 20,
   search: "",
   category: "",
-  sortBy: "",
+  sortBy: "" as const,
   sortOrder: "asc" as const,
 };

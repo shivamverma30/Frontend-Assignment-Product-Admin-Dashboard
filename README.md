@@ -38,9 +38,13 @@ DummyJSON mutations are simulated and are not persisted by the API. The complete
 
 Remote data remains the source of truth for reads; these local records are merged at the product repository boundary so refreshes preserve the current browser session without pretending that the API persisted the mutation.
 
+## Product query behavior
+
+Product list state is represented in the URL with `page`, `pageSize`, `search`, `category`, `sortBy`, and `sortOrder`. Search uses `/products/search`, while category filtering uses `/products/category/{category}` only when search is empty. DummyJSON does not expose a combined search-and-category endpoint, so the category control is disabled during search and the UI explains why.
+
+Search input changes update the URL immediately, but product requests wait 400ms after the last keystroke. Debouncing reduces unnecessary requests; it is not sufficient for correctness because an older request can still finish after a newer one. Each list request also gets an `AbortController` and a request sequence identity, so canceled or stale responses cannot replace the latest query result.
+
 ## Next implementation slice
 
-1. Add the login request, validation, session storage, logout, and API feedback states.
-2. Add the product repository hook with URL query normalization, pagination, category filtering, sorting, debounced search, and stale-request protection.
-3. Build the responsive table/card catalog and product detail view.
-4. Add create/edit/delete workflows and focused loading, error, empty, and retry states.
+1. Build the product detail view.
+2. Add create/edit/delete workflows and focused loading, error, empty, and retry states.
