@@ -1,6 +1,8 @@
 import axios from "axios";
 
-import { API_BASE_URL, STORAGE_KEYS } from "@/lib/constants";
+import { normalizeApiError } from "@/lib/api/errors";
+import { getAuthToken, notifyUnauthorized } from "@/lib/auth/session";
+import { API_BASE_URL } from "@/lib/constants";
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -8,17 +10,10 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    const session = window.localStorage.getItem(STORAGE_KEYS.authSession);
+  const accessToken = getAuthToken();
 
-    if (session) {
-      try {
-        const { accessToken } = JSON.parse(session) as { accessToken?: string };
-        if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-      } catch {
-        window.localStorage.removeItem(STORAGE_KEYS.authSession);
-      }
-    }
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
 
   return config;
@@ -27,11 +22,10 @@ apiClient.interceptors.request.use((config) => {
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401 && typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEYS.authSession);
-      window.dispatchEvent(new Event("product-admin:unauthorized"));
+    if (axios.isAxiosError(error) && error.response?.status === 401) {
+      notifyUnauthorized();
     }
 
-    return Promise.reject(error);
+    return Promise.reject(normalizeApiError(error));
   },
 );
