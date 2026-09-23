@@ -1,98 +1,375 @@
 # Product Admin Dashboard
 
-A restrained product operations workspace built with Next.js App Router, React, TypeScript, Tailwind CSS, Axios, and DummyJSON.
+A frontend product administration dashboard built with Next.js App Router, React, TypeScript, Tailwind CSS, Axios, and the DummyJSON API. It includes authenticated product browsing, URL-driven search and filtering, product details, and browser-local CRUD persistence for DummyJSON's simulated mutations.
 
-## Getting started
+## Live Demo
+
+[https://frontend-assignment-product-admin-shivam-verma.vercel.app/](https://frontend-assignment-product-admin-shivam-verma.vercel.app/)
+
+### Demo credentials
+
+- Username: `emilys`
+- Password: `emilyspass`
+
+## Features
+
+### Authentication
+
+- Login through DummyJSON with username/password credentials.
+- User-safe invalid credential errors.
+- Protected `/products` routes, including details, add, and edit routes.
+- Logout with auth state and token removal.
+- Bearer token attachment for authenticated API requests.
+- Duplicate login submission prevention.
+
+### Product management
+
+- Product image, title, category, price, rating, and stock.
+- Semantic desktop table with view, edit, and delete actions.
+- Mobile product cards with the same core product information and actions.
+- Product details with image gallery, description, metadata, and DummyJSON reviews.
+
+### Pagination
+
+- API pagination using `limit` and `skip`.
+- Numbered pages, Previous, and Next controls.
+- Page sizes of 10, 20, and 50.
+- Range text such as `Showing 21-40 of 194`.
+- Invalid and oversized page values are normalized safely.
+
+### Search
+
+- Server-side search through `/products/search?q=`.
+- 400ms debounce before issuing search requests.
+- Search resets the current page to 1.
+- Search value is synchronized to the URL.
+- Previous requests are canceled and stale responses are ignored.
+- Delayed-response behavior was verified with an artificially delayed `phone` request while replacing it with `laptop`.
+
+### Filtering and sorting
+
+- Categories loaded from DummyJSON.
+- Category filtering through `/products/category/:category`.
+- Sorting by price, rating, or title.
+- Ascending and descending sort order.
+- Filter and sort values are synchronized to the URL.
+
+### Product details
+
+- Route: `/products/[id]`.
+- Product images and gallery.
+- Description, category, price, rating, and stock.
+- Reviews from DummyJSON.
+- Clear not-found state and back link for invalid or unavailable products.
+
+### CRUD
+
+- Add product at `/products/new`.
+- Edit product at `/products/[id]/edit`.
+- Delete confirmation dialog before removal.
+- Validation for title, description, category, price, stock, and optional image URL.
+- Duplicate save and delete request prevention.
+- Success, loading, API error, and validation feedback.
+- Local persistence for DummyJSON's simulated mutations.
+
+### UI states
+
+- Contextual skeleton loading states.
+- Empty catalog/search results.
+- Product, category, detail, form, and delete error states.
+- Retry actions where retrying is meaningful.
+- Responsive table/card presentation without horizontal overflow at the reviewed target widths.
+
+## Tech Stack
+
+| Technology | Purpose |
+|---|---|
+| Next.js | Application framework and App Router |
+| React | UI development |
+| TypeScript | Type safety |
+| Tailwind CSS | Styling |
+| Axios | HTTP/API requests |
+| DummyJSON | Backend/API |
+
+No React Query, SWR, table library, pagination library, or additional UI/state-management dependency is used.
+
+## API Endpoints
+
+All requests use the shared Axios instance in `lib/api/client.ts`.
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| `POST` | `/auth/login` | Authenticate the demo user |
+| `GET` | `/products` | Fetch paginated products |
+| `GET` | `/products/search?q=` | Search products |
+| `GET` | `/products/categories` | Load category options |
+| `GET` | `/products/category/:category` | Fetch products in a category |
+| `GET` | `/products/:id` | Fetch product details |
+| `POST` | `/products/add` | Simulate product creation |
+| `PUT` | `/products/:id` | Simulate product update |
+| `DELETE` | `/products/:id` | Simulate product deletion |
+
+## Architecture
+
+The application keeps API calls outside UI components:
+
+```text
+UI routes
+  ↓
+Components and hooks
+  ↓
+API service modules and product store
+  ↓
+Shared Axios instance
+  ↓
+DummyJSON API
+```
+
+Important repository structure:
+
+```text
+app/
+├── (dashboard)/
+│   ├── products/page.tsx
+│   ├── products/[id]/page.tsx
+│   ├── products/[id]/edit/page.tsx
+│   └── products/new/page.tsx
+├── login/page.tsx
+└── globals.css
+components/
+├── auth/
+├── layout/
+├── products/
+└── ui/
+hooks/
+├── use-product-categories.ts
+├── use-product-detail.ts
+└── use-product-list.ts
+lib/
+├── api/
+│   ├── auth.ts
+│   ├── client.ts
+│   ├── errors.ts
+│   └── products.ts
+├── auth/
+├── product-store.ts
+├── constants.ts
+└── utils/product-query.ts
+types/
+├── auth.ts
+└── product.ts
+```
+
+## Authentication Flow
+
+1. The user submits username and password through the login form.
+2. `lib/api/auth.ts` sends `POST /auth/login` through the shared Axios client.
+3. DummyJSON returns access-token and user information.
+4. The auth session abstraction stores the session in browser `localStorage` under `product-admin.auth-session`.
+5. The Axios request interceptor reads the auth abstraction and adds `Authorization: Bearer <token>` when a token exists.
+6. `AuthGuard` waits for session hydration before redirecting unauthenticated users from protected routes.
+7. Logout clears the auth session and routes to `/login`.
+8. A centralized response interceptor clears the session and publishes an auth change on `401` responses without creating redirect loops.
+
+This is client-side persistence appropriate for a frontend assignment; it is not a server-side session or secure production authentication system.
+
+## URL State
+
+Product-list state is represented by these query parameters:
+
+- `page`
+- `pageSize`
+- `search`
+- `category`
+- `sortBy`
+- `sortOrder`
+
+Example:
+
+```text
+/products?page=2&pageSize=20&search=phone&sortBy=price&sortOrder=asc
+```
+
+Refreshing or sharing the URL reproduces the same list query. Invalid values such as `?page=abc`, negative pages, unsupported page sizes, invalid sort fields, and invalid sort orders fall back to safe defaults. If a valid request reveals that a page is beyond the available range, the URL is corrected to the last valid page.
+
+## Handling Stale Search Responses
+
+Search input is debounced for 400ms so typing does not issue a request for every keystroke. Debounce alone is not enough for correctness: a request started for `phone` can still be in flight when a later `laptop` request starts, and the older response might finish last.
+
+The product-list hook uses both mechanisms:
+
+- Each request receives an `AbortController` signal and the previous request is aborted when the query changes.
+- Each request receives a sequence identity. A response is applied only if its identity is still the current one.
+
+This means an older response cannot replace a newer query result even if cancellation arrives too late. The behavior was tested with an artificially delayed `phone` response equivalent to the assignment's delayed-response scenario, followed by a `laptop` search.
+
+## Search + Category API Limitation
+
+DummyJSON exposes search and category filtering through separate endpoints and does not provide the combined server-side search-plus-category operation required by the assignment.
+
+The application therefore uses this explicit behavior:
+
+- Non-empty search uses `/products/search`.
+- Non-empty category with an empty search uses `/products/category/:category`.
+- The category selector is disabled while search is active and explains why.
+- Clearing search re-enables category filtering.
+
+The UI does not pretend that the API supports a combined query.
+
+## DummyJSON Mutation Persistence
+
+DummyJSON `POST`, `PUT`, and `DELETE` product operations are simulated and are not permanent server-side persistence. The dedicated `lib/product-store.ts` abstraction keeps the visible result in browser `localStorage`:
+
+- `product-admin.created-products` stores created products.
+- `product-admin.product-overrides` stores edit overrides keyed by product ID.
+- `product-admin.deleted-product-ids` stores deleted IDs.
+
+List and detail data merge these records with API results. Newly created products can be opened even though DummyJSON cannot fetch them. Edited products show their local override. Deleted products are hidden from lists and show an unavailable/not-found state in details. Invalid or missing stored JSON is handled by falling back to empty records and removing the corrupt value. Product mutation state is separate from auth state and is not cleared by logout.
+
+## Loading, Empty, and Error Handling
+
+- Product lists show skeleton rows/cards while loading.
+- Existing product content remains visible while a changed query updates where practical.
+- Category loading and category errors are represented in selectors and toolbar feedback.
+- Details and edit routes show loading skeletons, API errors, or not-found states; the details view provides a retry action for retryable failures.
+- Forms disable controls and show `Saving...` during submission.
+- Delete dialogs show `Deleting...` and prevent duplicate actions.
+- Empty list/search results show a meaningful empty state.
+- API errors use the normalized error shape from `lib/api/errors.ts` rather than exposing Axios internals.
+- Retry actions repeat the current request.
+- Invalid product IDs and invalid URL values are handled without a broken page.
+
+## Responsive Design
+
+- At desktop widths, products use a semantic HTML table.
+- Below the desktop table breakpoint, products use cards instead of forcing horizontal table scrolling.
+- The reviewed layouts include approximately 1440px, 1024px, 768px, and 390px widths with no horizontal overflow in the final mobile check.
+
+## Design Decisions
+
+1. API calls are separated into `lib/api/auth.ts` and `lib/api/products.ts` so UI components focus on rendering and interaction.
+2. One Axios instance centralizes the base URL, bearer-token attachment, normalized errors, and unauthorized handling.
+3. URL parameters are the single source of truth for product-list state, making refresh and sharing predictable.
+4. Search is debounced to reduce avoidable requests, while cancellation and request identity provide correctness.
+5. Search and category use separate DummyJSON endpoints because the API does not support the required combined operation.
+6. DummyJSON mutations are merged through one product store so browser-visible changes survive refreshes.
+7. React Query and SWR were not used because this assignment benefits from explicit request lifecycle and stale-response handling.
+8. Table and pagination behavior are implemented with semantic HTML and small local components rather than additional libraries.
+
+## Problem Faced and Solution
+
+### Problem
+
+A locally created product could be returned by DummyJSON's simulated add endpoint without complete fields such as `rating`, `images`, or `reviews`.
+
+### Cause
+
+DummyJSON mutation responses are simulated and can be partial compared with a full product returned from `GET /products`.
+
+### Solution
+
+The product store normalizes mutation responses with complete safe defaults before storing them. Product rows, cards, and details also use an explicit no-image state when no thumbnail exists.
+
+### Result
+
+Created products remain safe to render in lists and details, survive refresh, and can be edited or locally deleted even though the server does not persist them.
+
+## AI Assistance
+
+AI tools were used for implementation guidance, code suggestions, debugging, edge-case review, and README drafting. The final implementation was checked against the repository, linted, type-checked, production-built, and exercised through browser workflow checks. The README is intentionally limited to behavior supported by the current codebase.
+
+## Setup
+
+No environment variables are required.
 
 ```bash
+git clone https://github.com/shivamverma30/Frontend-Assignment-Product-Admin-Dashboard.git
+cd Frontend-Assignment-Product-Admin-Dashboard
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000. The current foundation exposes `/login`, `/products`, and `/products/[id]`.
+Open [http://localhost:3000](http://localhost:3000).
 
-Validation commands:
-
-```bash
-npm run lint
-npx tsc --noEmit
-npm run build
-```
-
-## Architecture
-
-- `app/` contains route composition and the protected dashboard layout.
-- `components/` contains reusable layout, auth, and UI primitives.
-- `lib/api/client.ts` is the only Axios instance. It applies the DummyJSON base URL, attaches the stored access token, and publishes unauthorized responses consistently.
-- `lib/api/auth.ts` and `lib/api/products.ts` contain typed request functions. UI components do not call Axios directly.
-- `types/` contains the shared auth and product contracts.
-- `lib/constants.ts` contains storage keys, safe page-size options, and API defaults.
-
-## Client-side mutation persistence
-
-DummyJSON mutations are simulated and are not persisted by the API. The completed dashboard will retain the user-visible result in `localStorage` using three separate records:
-
-- `product-admin.created-products` for products created in this browser.
-- `product-admin.product-overrides` for edits keyed by product id.
-- `product-admin.deleted-product-ids` for ids hidden from the catalog.
-
-Remote data remains the source of truth for reads; these local records are merged at the product repository boundary so refreshes preserve the current browser session without pretending that the API persisted the mutation. Product mutation state is intentionally independent from login state and survives logout/login.
-
-## Product query behavior
-
-Product list state is represented in the URL with `page`, `pageSize`, `search`, `category`, `sortBy`, and `sortOrder`. Search uses `/products/search`, while category filtering uses `/products/category/{category}` only when search is empty. DummyJSON does not expose a combined search-and-category endpoint, so the category control is disabled during search and the UI explains why.
-
-Search input changes update the URL immediately, but product requests wait 400ms after the last keystroke. Debouncing reduces unnecessary requests; it is not sufficient for correctness because an older request can still finish after a newer one. Each list request also gets an `AbortController` and a request sequence identity, so canceled or stale responses cannot replace the latest query result.
-
-## Authentication
-
-The DummyJSON demo credentials are `emilys` / `emilyspass`. Authentication uses `POST /auth/login`; the access token and user session are stored in browser `localStorage` for this frontend-only assignment. There are no environment variables required.
-
-## CRUD behavior
-
-Create, update, and delete calls are sent to DummyJSON through the shared Axios service. Because DummyJSON simulates mutations, successful responses are written to the local product store: created products, per-ID edit overrides, and deleted IDs. Details and list views merge that state with API responses, including locally created products and deleted-product not-found states.
-
-## Engineering notes
-
-One important issue was authentication hydration during a full page refresh. The protected layout initially rendered before the browser session had been read, which could redirect a valid user to login. The auth store now exposes a hydration snapshot and the guard waits for it before redirecting.
-
-AI tools helped scaffold repetitive TypeScript, component, and API wiring during development. The implementation was reviewed with lint, TypeScript, production builds, browser interaction checks, delayed search requests, responsive viewports, and forced API failures. No claim is made that every line was manually typed.
-
-## Compliance checklist
-
-- [x] Login with correct credentials and useful wrong-credential errors
-- [x] Axios login request and one shared Axios instance
-- [x] Bearer token interceptor and centralized normalized errors
-- [x] Logout and protected product routes
-- [x] Product image, title, category, price, rating, and stock
-- [x] Desktop semantic table and mobile cards
-- [x] `limit`, `skip`, numbered pagination, Previous, Next, page sizes 10/20/50
-- [x] `Showing X-Y of Z` range text
-- [x] Debounced server-side search with page reset
-- [x] AbortController and request identity stale-response protection
-- [x] Delayed search verification with `delay=2000` behavior simulated in browser routing
-- [x] Categories API and category endpoint filtering
-- [x] Price, rating, and title sorting with ascending/descending order
-- [x] Product details, gallery, description, reviews, and invalid ID state
-- [x] Add and edit forms with validation and duplicate-submit protection
-- [x] Delete confirmation dialog with duplicate-delete protection
-- [x] Local persistence for created, edited, and deleted products
-- [x] Loading, empty, error, and retry states for async product flows
-- [x] URL state for page, page size, search, category, sort, and order
-- [x] Invalid URL normalization and oversized-page correction
-- [x] API separation, small components, and no duplicated request logic
-- [x] No React Query, SWR, table library, pagination library, or new dependency
-- [x] README documentation
-- [ ] Regular Git commits: commits are intentionally left for the project owner per instructions
-- [x] Production build readiness verified
-
-## Verification commands
+## Available Scripts
 
 ```bash
+npm run dev
+npm run build
+npm run start
 npm run lint
 npx tsc --noEmit
-npm run build
 ```
 
-1. Build the product detail view.
-2. Add create/edit/delete workflows and focused loading, error, empty, and retry states.
+## Assignment Compliance
+
+- [x] Login
+- [x] Correct credentials
+- [x] Wrong credential handling
+- [x] Logout
+- [x] Protected routes
+- [x] Product image
+- [x] Product title
+- [x] Category
+- [x] Price
+- [x] Rating
+- [x] Stock
+- [x] Desktop table
+- [x] Mobile cards
+- [x] Pagination using `limit`/`skip`
+- [x] Page numbers
+- [x] Previous/Next
+- [x] Page sizes 10/20/50
+- [x] `Showing X-Y of Z`
+- [x] Debounced search
+- [x] Search resets page
+- [x] Stale request protection
+- [x] Delayed-response search verification
+- [x] Category filter
+- [x] Price sorting
+- [x] Rating sorting
+- [x] Title sorting
+- [x] Product details
+- [x] Images
+- [x] Description
+- [x] Reviews
+- [x] Wrong ID/not-found state
+- [x] Add product
+- [x] Edit product
+- [x] Delete product
+- [x] Validation
+- [x] Delete confirmation
+- [x] Loading state
+- [x] Empty state
+- [x] Error state
+- [x] Retry
+- [x] URL page state
+- [x] URL search state
+- [x] URL filter state
+- [x] URL sort state
+- [x] Invalid URL handling
+- [x] Duplicate login prevention
+- [x] Duplicate save prevention
+- [x] Shared Axios setup
+- [x] Centralized API error handling
+- [x] API calls separated from UI
+- [x] Small reusable components
+- [x] No React Query
+- [x] No SWR
+- [x] No ready-made table library
+- [x] No ready-made pagination library
+
+## Submission
+
+### Live Demo
+
+[https://frontend-assignment-product-admin-shivam-verma.vercel.app/](https://frontend-assignment-product-admin-shivam-verma.vercel.app/)
+
+### GitHub Repository
+
+[https://github.com/shivamverma30/Frontend-Assignment-Product-Admin-Dashboard](https://github.com/shivamverma30/Frontend-Assignment-Product-Admin-Dashboard)
+
+### Demo Credentials
+
+- Username: `emilys`
+- Password: `emilyspass`
